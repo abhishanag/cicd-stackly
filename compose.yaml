@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: cicd-stackly-app
+    ports:
+      - "5000:5000"
+    environment:
+      APP_ENV: development
+    volumes:
+      - app-data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  app-data:

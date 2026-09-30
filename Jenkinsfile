@@ -16,11 +16,8 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                    docker run --rm \
-                      -v "$WORKSPACE:/app" \
-                      -w /app \
-                      python:3.12-slim \
-                      sh -c "pip install --no-cache-dir -r requirements.txt && python -m unittest discover -s tests -v"
+                    python3 -m pip install --break-system-packages --no-cache-dir -r requirements.txt
+                    python3 -m unittest discover -s tests -v
                 '''
             }
         }

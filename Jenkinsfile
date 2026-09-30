@@ -102,10 +102,50 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            archiveArtifacts artifacts: 'trivy-reports/*.json',
-                             allowEmptyArchive: true
-        }
+     post {
+      success {
+        sh '''
+            echo "Marking successful image as stable..."
+            docker tag ${IMAGE_NAME} cicd-stackly:stable
+            echo "Stable image is now: ${IMAGE_NAME}"
+        '''
     }
+
+    failure {
+        sh '''
+            echo "Pipeline failed. Checking for stable image..."
+
+            if docker image inspect cicd-stackly:stable >/dev/null 2>&1; then
+                echo "Rolling back to stable image: cicd-stackly:stable"
+
+                IMAGE_NAME=cicd-stackly:stable docker compose up -d
+
+                echo "Waiting for rollback deployment..."
+
+                for i in $(seq 1 12); do
+                    STATUS=$(docker inspect --format='{{.State.Health.Status}}' cicd-stackly-app 2>/dev/null || true)
+
+                    echo "Rollback health status: $STATUS"
+
+                    if [ "$STATUS" = "healthy" ]; then
+                        echo "Rollback successful. Application is healthy."
+                        exit 0
+                    fi
+
+                    sleep 5
+                done
+
+                echo "Rollback failed: application did not become healthy."
+                exit 1
+            else
+                echo "No stable image available. Rollback cannot be performed."
+            fi
+        '''
+    }
+
+    always {
+        archiveArtifacts artifacts: 'trivy-reports/*.json',
+                         allowEmptyArchive: true
+    }
+  }
 }

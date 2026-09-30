@@ -48,8 +48,23 @@ pipeline {
         stage('Health Check') {
             steps {
                 sh '''
-                    sleep 5
-                    curl -f http://localhost:5000/health
+                    echo "Waiting for application to become healthy..."
+
+                    for i in $(seq 1 12); do
+                        STATUS=$(docker inspect --format='{{.State.Health.Status}}' cicd-stackly-app 2>/dev/null || true)
+
+                        echo "Health status: $STATUS"
+
+                        if [ "$STATUS" = "healthy" ]; then
+                            echo "Application is healthy!"
+                            exit 0
+                        fi
+
+                        sleep 5
+                    done
+
+                    echo "Application did not become healthy"
+                    exit 1
                 '''
             }
         }

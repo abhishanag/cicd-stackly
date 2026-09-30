@@ -68,6 +68,35 @@ pipeline {
                 '''
             }
         }
+              stage('Image Cleanup') {
+                steps {
+                 sh '''
+                    echo "Cleaning old application images..."
+
+                    IMAGES=$(docker images "cicd-stackly" \
+                        --format "{{.Repository}}:{{.Tag}}" \
+                        | grep -E '^cicd-stackly:[0-9]+$' \
+                        | sort -t: -k2,2n)
+
+                    COUNT=$(echo "$IMAGES" | grep -c . || true)
+
+                    if [ "$COUNT" -gt 3 ]; then
+                        REMOVE_COUNT=$((COUNT - 3))
+
+                        echo "Removing $REMOVE_COUNT old image(s)..."
+
+                        echo "$IMAGES" | head -n "$REMOVE_COUNT" | while read IMAGE; do
+                            echo "Removing old image: $IMAGE"
+                            docker rmi "$IMAGE" || true
+                        done
+                    else
+                        echo "No old images need cleanup."
+                    fi
+
+                    echo "Image cleanup completed."
+                '''
+            }
+        }
     }
 
     post {

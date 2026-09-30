@@ -41,7 +41,10 @@ pipeline {
 
         stage('Deploy') {
             steps {
-                sh 'docker compose up -d --build'
+                sh '''
+                    echo "Deploying image: ${IMAGE_NAME}"
+                    IMAGE_NAME=${IMAGE_NAME} docker compose up -d
+                '''
             }
         }
 

@@ -1,6 +1,6 @@
 services:
   app:
-    build: .
+    image: ${IMAGE_NAME:-cicd-stackly:local}
     container_name: cicd-stackly-app
     ports:
       - "5000:5000"
